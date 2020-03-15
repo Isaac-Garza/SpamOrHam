@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import sklearn
+import string
 
 message = [line.rstrip() for line in open("SMSSpamCollection")]
 
@@ -8,7 +8,7 @@ message = [line.rstrip() for line in open("SMSSpamCollection")]
 #     print(message_no,message)
 #     print('\n')
 
-message = pd.read_csv("SMSSpamCollection", sep = '\t', names = ["labes", "message"])
+message = pd.read_csv("SMSSpamCollection", sep = '\t', names = ["labels", "message"])
 # print(message.head())
 
 test_data = []
@@ -19,10 +19,14 @@ for i in range(150):
     else:
         training_data.append(message.iloc[i])
 
-
+# testing punct. 
+mess = 'sample message!...'
+nopunc=[char for char in mess if char not in string.punctuation]
+nopunc=''.join(nopunc)
+print(nopunc)
 
 # Helpful Links:
-# https://stackoverflow.com/questions/47298070/importerror-no-module-named-wordcloud/53696236
+# https://www.kaggle.com/dilip990/spam-ham-detection-using-naive-bayes-classifier
 
 
 
