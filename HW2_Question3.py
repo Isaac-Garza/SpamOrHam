@@ -15,7 +15,7 @@ message = pd.read_csv("SMSSpamCollection", sep = '\t', names = ["labels", "messa
 test_data = []
 training_data = []
 print("Length of the message: ",len(message))
-for i in range(10):
+for i in range(11):
     if(i % 10 == 0):
         test_data.append(message.iloc[i])
     else:
@@ -31,13 +31,14 @@ print("-------------------Training Data DataFrame:--------------- \n", pd_traini
 
 
 # Step 2 Remove Punctuation
-print(pd_training_data.iloc[0])
-mess = str(pd_training_data.iloc[0]['message'])
-nopunc=[char for char in mess if char not in string.punctuation]
-nopunc=''.join(nopunc)
-print(nopunc)
-pd_training_data.iloc[0]['message'] = nopunc
-print("This is training mod: \n\n",pd_training_data.iloc[0]['message'])
+print(pd_training_data.head(),"\n\n\n")
+for i in range(9):
+    mess = str(pd_training_data.iloc[i]['message'])
+    nopunc=[char for char in mess if char not in string.punctuation]
+    nopunc=''.join(nopunc)
+    pd_training_data.iloc[i]['message'] = nopunc
+
+print(pd_training_data.head())
 
 
 
