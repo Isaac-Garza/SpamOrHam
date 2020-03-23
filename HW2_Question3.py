@@ -51,6 +51,10 @@ for i in range(len(pd_test_data)):
     nopunc=''.join(nopunc)
     pd_test_data.iloc[i]['message'] = nopunc
 
+# SPAM string
+spam = spam_words = ' '.join(list(pd_training_data[tpd_training_datarainData['labels'] == 1]['messages']))
+
+# HAM string
 # HAM and SPAM count
 print("HAM COUNT: ", pd_training_data.groupby('labels').get_group('ham').count().values[0])
 print("SPAM COUNT: ", pd_training_data.groupby('labels').get_group('spam').count().values[0])
