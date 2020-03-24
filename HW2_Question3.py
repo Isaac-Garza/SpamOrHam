@@ -52,12 +52,39 @@ for i in range(len(pd_test_data)):
     pd_test_data.iloc[i]['message'] = nopunc
 
 # SPAM string
-spam = spam_words = ' '.join(list(pd_training_data[tpd_training_datarainData['labels'] == 1]['messages']))
+# spam = ' '.join(list(pd_training_data[pd_training_data['labels'] == 'spam']['message']))
 
 # HAM string
-# HAM and SPAM count
-print("HAM COUNT: ", pd_training_data.groupby('labels').get_group('ham').count().values[0])
-print("SPAM COUNT: ", pd_training_data.groupby('labels').get_group('spam').count().values[0])
+ham_words = ' '.join(list(pd_training_data[pd_training_data['labels'] == 'ham']['message']))
+
+# print (spam)
+# print (ham)
+
+# Dictionary Frequency Counter for Ham
+from collections import Counter
+ham_word_freq = Counter(ham_words.split())
+
+alpha = 0.2
+N = 20000
+
+
+ham_word_count = len(ham_words)
+
+print("Print Freq Message: ", len(ham_word_freq))
+print("Print Ham List:", len(ham_words))
+
+# Calculate the P(word|ham) for every word
+for key in ham_word_freq.keys():  
+        ham_word_freq[key] = (ham_word_freq[key] + alpha)/(ham_word_count + (N*alpha))
+
+print(ham_word_freq)
+
+
+
+
+
+
+
 
 
 
