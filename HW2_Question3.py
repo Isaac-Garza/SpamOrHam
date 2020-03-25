@@ -3,8 +3,6 @@ import pandas as pd
 import string
 from sklearn.feature_extraction.text import CountVectorizer
 
-from nltk.corpus import stopwords
-
 # Step 1
 print("-------------------Message DataFrame----------------------")
 message = pd.read_csv('SMSSpamCollection',sep='\t',names=["labels","message"])
@@ -99,17 +97,15 @@ for key in spam_word_freq.keys():
 # print(ham_word_freq)
 # print(spam_word_freq)
 
+# Convert Ham Data Dictoinary to DataFrame
 ham_data = pd.DataFrame.from_dict(ham_word_freq, orient='index').reset_index()
 ham_data.rename(columns = {'index':'word', 0:'P(word|ham)'}, inplace = True)
 
-
+# Convert Spam Data Dictionary to DataFrame
 spam_data = pd.DataFrame.from_dict(spam_word_freq, orient = 'index').reset_index()
 ham_data.rename(columns = {'index':'word', 0:'P(word|spam)'}, inplace = True)
 
-#  take a test message, and figure out the probability of the message being ham.print
-#  sum of all prob(word|ham) then we have our guess. What threshold do we want? 
-#  threshold: 51% OR 70% OR 90% ??? Depends on how strict you want it to be right?
-
+# Get the Number of Ham and Spam 
 groups = pd_training_data.groupby('labels')
 hamCount = (groups.get_group("ham")).count().values[0]
 spamCount = groups.get_group("spam").count().values[0]
@@ -122,38 +118,76 @@ total_message = hamCount + spamCount
 print('messages count:',total_message)
 
 
+# Calculate the probability of Ham and Spam
 prob_ham = hamCount / total_message
 prob_spam = spamCount / total_message
 
 print("PROB OF HAM:",prob_ham)
 print("PROB OF SPAM:",prob_spam)
 
-test_string = pd_test_data.iloc[0]['message'].split()
+missingWords = []
+testDataWords = []
+y_predict = []
 
-print("MSG:",test_string)
+# Predict if Test Case is Ham or Spam
+for i in range(len(pd_test_data)):
+    test_string = pd_test_data.iloc[i]['message'].split()
 
-probSumHamWords = 1
-probSumSpamWords = 1
+    # print("MSG:",test_string)
 
-newStr = []
+    probSumHamWords = 1
+    probSumSpamWords = 1
+    newStr = []
 
-for word in test_string:
-    if word in all_words_freq:
-        newStr.append(word)
+    for word in test_string:
+        if word in all_words_freq:
+            newStr.append(word)
+        else:
+            missingWords.append(word)
+        testDataWords.append(word)
 
-for word in all_words_freq:
-    if word in newStr:
-        if word in ham_word_freq:
-            probSumHamWords *= ham_word_freq[word]
-        if word in spam_word_freq:
-            probSumSpamWords *= spam_word_freq[word]
+    for word in all_words_freq:
+        if word in newStr:
+            if word in ham_word_freq:
+                probSumHamWords *= ham_word_freq[word]
+            if word in spam_word_freq:
+                probSumSpamWords *= spam_word_freq[word]
+        # else:
+        #     if word in ham_word_freq:
+        #         probSumHamWords *= (1-ham_word_freq[word])
+        #     if word in spam_word_freq:
+        #         probSumSpamWords *= (1-spam_word_freq[word])
+    
+    ham_predict = (prob_ham * probSumHamWords) / ( (prob_ham * probSumHamWords) + (prob_spam * probSumSpamWords)) 
+    spam_predict = (prob_spam * probSumSpamWords) / ((prob_spam * probSumSpamWords)+ (prob_ham * probSumHamWords))
+
+
+    if (ham_predict > 0.50):
+        y_predict.append("ham")
     else:
-        if word in ham_word_freq:
-            probSumHamWords *= (1-ham_word_freq[word])
-        if word in spam_word_freq:
-            probSumSpamWords *= (1-spam_word_freq[word])
-        
-print("\nP Hammy", ( (prob_ham * probSumHamWords) / ( (prob_ham * probSumHamWords) + (prob_spam * probSumSpamWords)) ))
+        y_predict.append("spam")
 
-print("P Spammy", ( (prob_spam * probSumSpamWords) / ((prob_spam * probSumSpamWords)+ (prob_ham * probSumHamWords)) ))
+print("Missing Word LEngth: ",len(missingWords))
+print("Total Words in all Tests",len(testDataWords))
+
+y_true = pd_test_data["labels"].tolist()
+# print(y_predict, "\t", y_true)
+# print(len(y_predict))
+# print(len(pd_test_data))
+
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
+
+print("CONFUSION MATRIX:")
+print(confusion_matrix(y_true, y_predict))
+
+print("Classification Report")
+print(classification_report(y_true, y_predict))
+
+
+
+
+
+
+
 
