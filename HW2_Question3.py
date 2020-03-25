@@ -129,9 +129,22 @@ print("\nPROB OF HAM:",prob_ham,"\n")
 # ( P(HAM) * P(word[0]) * P(word[1]) * ... * P(word[n]) ) 
 # * ( P(SPAM)  * P(wordInSpam[0]) * P(wordInSpam[1]) * ... P(wordInSpam[n])  )
 
-test_string = pd_test_data.iloc[0]['message']
-print("This is test_string: ", test_string)
-# result = (prob_ham * )
+# Probability of each work in test given Ham [[P(word[0]) * P(word[1]) * ... * P(word[n]) ]]
+test_string = pd_test_data.iloc[0]['message'].split()
+prob = 1
+# name = key :: age = val
+for i in test_string:
+    for word, freq in ham_word_freq.items():    # for name, age in dictionary.iteritems():  (for Python 2.x)
+        if word == i:
+            prob *= ham_word_freq[word]
+            print(ham_word_freq[word])
+
+
+            
+
+print("This is test_string: ", test_string[0])
+
+
 
 
 from sklearn.metrics import confusion_matrix
