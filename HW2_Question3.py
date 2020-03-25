@@ -37,19 +37,19 @@ pd_training_data = pd.DataFrame(training_data)
 
 # Step 2 
 
-# Remove Punctuation for Training Set
+# Remove Punctuation & Case for Training Set 
 for i in range(len(pd_training_data)):
     mess = str(pd_training_data.iloc[i]['message'])
     nopunc=[char for char in mess if char not in string.punctuation]
     nopunc=''.join(nopunc)
-    pd_training_data.iloc[i]['message'] = nopunc
+    pd_training_data.iloc[i]['message'] = nopunc.lower()
 
 # Remove Punctuation for Testing Set
 for i in range(len(pd_test_data)):
     mess = str(pd_test_data.iloc[i]['message'])
     nopunc=[char for char in mess if char not in string.punctuation]
     nopunc=''.join(nopunc)
-    pd_test_data.iloc[i]['message'] = nopunc
+    pd_test_data.iloc[i]['message'] = nopunc.lower()
 
 # -----Training Data-----
 # SPAM string
@@ -60,6 +60,8 @@ ham_words = ' '.join(list(pd_training_data[pd_training_data['labels'] == 'ham'][
 
 # Both Ham and Spam String
 all_words = spam_words + ' ' + ham_words
+
+# -----Training Data-----
 
 # print (spam)
 # print (ham)
@@ -86,6 +88,7 @@ print("Print Freq Message:", len(ham_word_freq))
 print("Print Spam Freq:", len(spam_words))
 print("Print Ham Freq:", len(ham_words))
 
+
 # Calculate the P(word|ham) for every word
 for key in ham_word_freq.keys():  
     ham_word_freq[key] = (ham_word_freq[key] + alpha)/(total_freq_of_words + (N * alpha)) 
@@ -103,63 +106,54 @@ ham_data.rename(columns = {'index':'word', 0:'P(word|ham)'}, inplace = True)
 spam_data = pd.DataFrame.from_dict(spam_word_freq, orient = 'index').reset_index()
 ham_data.rename(columns = {'index':'word', 0:'P(word|spam)'}, inplace = True)
 
-
-print(ham_data)
-print(spam_data)
-
 #  take a test message, and figure out the probability of the message being ham.print
 #  sum of all prob(word|ham) then we have our guess. What threshold do we want? 
 #  threshold: 51% OR 70% OR 90% ??? Depends on how strict you want it to be right?
 
-print(pd_test_data.iloc[0])
-
 groups = pd_training_data.groupby('labels')
-hamCount = groups.get_group("ham").count().values[0]
+hamCount = (groups.get_group("ham")).count().values[0]
+spamCount = groups.get_group("spam").count().values[0]
 
 # probability of a word being ham =  ( all messages of ham / all messages of ham + all messages of spam )
 
-prob_ham = hamCount / len(message)
-print("\nPROB OF HAM:",prob_ham,"\n")
+print("ham count:",hamCount)
+print("spam count:",spamCount)
+total_message = hamCount + spamCount
+print('messages count:',total_message)
 
-#  MESG = pd_test_data.iloc[0]['message']
-#  P( HAM | MESG ) 
 
-#  P(HAM) * P(word[0]) * P(word[1]) * ... * P(word[n]) 
-# / 
-# ( P(HAM) * P(word[0]) * P(word[1]) * ... * P(word[n]) ) 
-# * ( P(SPAM)  * P(wordInSpam[0]) * P(wordInSpam[1]) * ... P(wordInSpam[n])  )
+prob_ham = hamCount / total_message
+prob_spam = spamCount / total_message
 
-# Probability of each work in test given Ham [[P(word[0]) * P(word[1]) * ... * P(word[n]) ]]
+print("PROB OF HAM:",prob_ham)
+print("PROB OF SPAM:",prob_spam)
+
 test_string = pd_test_data.iloc[0]['message'].split()
-prob = 1
-# name = key :: age = val
-for i in test_string:
-    for word, freq in ham_word_freq.items():    # for name, age in dictionary.iteritems():  (for Python 2.x)
-        if word == i:
-            prob *= ham_word_freq[word]
-            print(ham_word_freq[word])
 
+print("MSG:",test_string)
 
-            
+probSumHamWords = 1
+probSumSpamWords = 1
 
-print("This is test_string: ", test_string[0])
+newStr = []
 
+for word in test_string:
+    if word in all_words_freq:
+        newStr.append(word)
 
+for word in all_words_freq:
+    if word in newStr:
+        if word in ham_word_freq:
+            probSumHamWords *= ham_word_freq[word]
+        if word in spam_word_freq:
+            probSumSpamWords *= spam_word_freq[word]
+    else:
+        if word in ham_word_freq:
+            probSumHamWords *= (1-ham_word_freq[word])
+        if word in spam_word_freq:
+            probSumSpamWords *= (1-spam_word_freq[word])
+        
+print("\nP Hammy", ( (prob_ham * probSumHamWords) / ( (prob_ham * probSumHamWords) + (prob_spam * probSumSpamWords)) ))
 
+print("P Spammy", ( (prob_spam * probSumSpamWords) / ((prob_spam * probSumSpamWords)+ (prob_ham * probSumHamWords)) ))
 
-from sklearn.metrics import confusion_matrix
-# 1 = ham
-# 0 = spam
-
-# for e in range(len(pd_test_data)):
-#     if pd_test_data.iloc[e]['labels'] == 'ham':
-#         pd_test_data.iloc[e]['labels'] = 1
-#     else:
-#         pd_test_data.iloc[e]['labels'] = 0
-
-# print(pd_test_data)
-
-
-#  repeat this for all test messages.
-
-# find our acccuracy based off what the message is supposed to be. (correct guesses / all test messages)
