@@ -14,7 +14,7 @@ message = pd.read_csv('SMSSpamCollection',sep='\t',names=["labels","message"])
 test_data = []
 training_data = []
 
-print("Length of the message: ", len(message))
+# print("Length of the message: ", len(message))
 
 for i in range(len(message)):
     if(i % 10 == 0):
@@ -42,6 +42,8 @@ for i in range(len(pd_training_data)):
     nopunc=''.join(nopunc)
     pd_training_data.iloc[i]['message'] = nopunc.lower()
 
+pd_training_data.reset_index(inplace = True)
+
 # Remove Punctuation for Testing Set
 for i in range(len(pd_test_data)):
     mess = str(pd_test_data.iloc[i]['message'])
@@ -49,141 +51,105 @@ for i in range(len(pd_test_data)):
     nopunc=''.join(nopunc)
     pd_test_data.iloc[i]['message'] = nopunc.lower()
 
-# -----Training Data-----
-# SPAM string
-spam_words = ' '.join(list(pd_training_data[pd_training_data['labels'] == 'spam']['message']))
+pd_test_data.reset_index(inplace = True)
 
-# HAM string
-ham_words = ' '.join(list(pd_training_data[pd_training_data['labels'] == 'ham']['message']))
-
-# Both Ham and Spam String
-all_words = spam_words + ' ' + ham_words
-
-# -----Training Data-----
-
-# print (spam)
-# print (ham)
+# Gather Vocab for Messages
+vocab_dictionary = {}
+for index in range(len(pd_training_data)):
+    for word in pd_training_data.iloc[index]["message"].split():
+        if not (word in vocab_dictionary):
+            vocab_dictionary[index] = word
 
 
-from collections import Counter
-# Dictionary Frequency Counter for Ham
-ham_word_freq = Counter(ham_words.split())
+from sklearn.feature_extraction.text import CountVectorizer
 
-# Dictionary Frequency Counter for Spam
-spam_word_freq= Counter(spam_words.split())
+count_vector = CountVectorizer()
+count_vector.fit(pd_training_data['message'])
+count_vector.get_feature_names()
 
-# Dictionary Frequency Counter for all words
-all_words_freq = Counter(all_words.split())
+doc_array = count_vector.transform(pd_training_data['message']).toarray()
 
+frequency_matrix = pd.DataFrame(doc_array, columns = count_vector.get_feature_names())
+frequency_matrix = frequency_matrix.join(pd_training_data['labels'])
 
-alpha = 0.2
-N = 20000
+# Group Ham and Spam
+groups = frequency_matrix.groupby('labels')
 
+ham_features = groups.get_group("ham")
+ham_features.reset_index(drop = True, inplace = True)
+ham_features = ham_features.drop(columns = ['labels'], axis = 1)
 
-total_freq_of_words = len(all_words_freq)
-
-print("Print Freq Message:", len(ham_word_freq))
-print("Print Spam Freq:", len(spam_words))
-print("Print Ham Freq:", len(ham_words))
-
-
-# Calculate the P(word|ham) for every word
-for key in ham_word_freq.keys():  
-    ham_word_freq[key] = (ham_word_freq[key] + alpha)/(total_freq_of_words + (N * alpha)) 
-
-for key in spam_word_freq.keys():
-    spam_word_freq[key] = (spam_word_freq[key] + alpha)/(total_freq_of_words + (N * alpha))
-
-# print(ham_word_freq)
-# print(spam_word_freq)
-
-# Convert Ham Data Dictoinary to DataFrame
-ham_data = pd.DataFrame.from_dict(ham_word_freq, orient='index').reset_index()
-ham_data.rename(columns = {'index':'word', 0:'P(word|ham)'}, inplace = True)
-
-# Convert Spam Data Dictionary to DataFrame
-spam_data = pd.DataFrame.from_dict(spam_word_freq, orient = 'index').reset_index()
-ham_data.rename(columns = {'index':'word', 0:'P(word|spam)'}, inplace = True)
-
-# Get the Number of Ham and Spam 
-groups = pd_training_data.groupby('labels')
-hamCount = (groups.get_group("ham")).count().values[0]
-spamCount = groups.get_group("spam").count().values[0]
-
-# probability of a word being ham =  ( all messages of ham / all messages of ham + all messages of spam )
-
-print("ham count:",hamCount)
-print("spam count:",spamCount)
-total_message = hamCount + spamCount
-print('messages count:',total_message)
+spam_features = groups.get_group("spam")
+spam_features.reset_index(drop = True, inplace = True)
+spam_features = spam_features.drop(columns = ['labels'], axis = 1)
 
 
+# key = word, value = probablity 
+# Calculate P(Ham|Word)
+ham_words = list(ham_features)
+ham_prob_dict = {}
+
+for label in ham_words:
+    feature_Total = ham_features[label].sum()
+    ham_prob_dict[label] = float(feature_Total)/ len(ham_features)
+
+spam_words = list(spam_features)
+spam_prob_dict = {}
+
+
+# Calculate P(Spam|Word)
+for label in spam_words:
+    feature_Total = spam_features[label].sum()
+    spam_prob_dict[label] = (feature_Total) / len(spam_features)
+
+
+
+predictions = []
 # Calculate the probability of Ham and Spam
-prob_ham = hamCount / total_message
-prob_spam = spamCount / total_message
+prob_ham = len(ham_features) / len(message)
+prob_spam = len(spam_features) / len(message)
 
-print("PROB OF HAM:",prob_ham)
-print("PROB OF SPAM:",prob_spam)
+print("test:",ham_prob_dict['register'])
 
-missingWords = []
-testDataWords = []
-y_predict = []
-
-# Predict if Test Case is Ham or Spam
-for i in range(len(pd_test_data)):
-    test_string = pd_test_data.iloc[i]['message'].split()
-
-    # print("MSG:",test_string)
-
-    probSumHamWords = 1
-    probSumSpamWords = 1
-    newStr = []
-
-    for word in test_string:
-        if word in all_words_freq:
-            newStr.append(word)
-        else:
-            missingWords.append(word)
-        testDataWords.append(word)
-
-    for word in all_words_freq:
-        if word in newStr:
-            if word in ham_word_freq:
-                probSumHamWords *= ham_word_freq[word]
-            if word in spam_word_freq:
-                probSumSpamWords *= spam_word_freq[word]
-        # else:
-        #     if word in ham_word_freq:
-        #         probSumHamWords *= (1-ham_word_freq[word])
-        #     if word in spam_word_freq:
-        #         probSumSpamWords *= (1-spam_word_freq[word])
-    
-    ham_predict = (prob_ham * probSumHamWords) / ( (prob_ham * probSumHamWords) + (prob_spam * probSumSpamWords)) 
-    spam_predict = (prob_spam * probSumSpamWords) / ((prob_spam * probSumSpamWords)+ (prob_ham * probSumHamWords))
+for index in range(len(pd_test_data)):
+    msgProbOfHam = 1
+    msgProbOfSpam = 1
+    for word in pd_test_data.iloc[index]['message'].split():
+        if word in ham_prob_dict:
+       
+            msgProbOfHam *= ham_prob_dict[word]
+        if word in spam_prob_dict:
+            
+            msgProbOfSpam *= spam_prob_dict[word]
 
 
-    if (ham_predict > 0.50):
-        y_predict.append("ham")
+
+    ham_predict = (prob_ham * msgProbOfHam) / ( (prob_ham * msgProbOfHam) + (prob_spam * msgProbOfSpam) ) 
+    spam_predict = (prob_spam * msgProbOfSpam) / ( (prob_spam * msgProbOfSpam) + (prob_ham * msgProbOfHam) )
+
+
+
+    if ham_predict > spam_predict:
+        predictions.append('ham')
     else:
-        y_predict.append("spam")
+        predictions.append('spam')
 
-print("Missing Word LEngth: ",len(missingWords))
-print("Total Words in all Tests",len(testDataWords))
+
 
 y_true = pd_test_data["labels"].tolist()
-# print(y_predict, "\t", y_true)
-# print(len(y_predict))
-# print(len(pd_test_data))
+
+# # print(y_predict, "\t", y_true)
+# # print(len(y_predict))
+# # print(len(pd_test_data))
 
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 
 print("CONFUSION MATRIX:")
-print(confusion_matrix(y_true, y_predict))
+print(confusion_matrix(y_true, predictions))
 
 print("Classification Report")
-print(classification_report(y_true, y_predict))
-
+print(classification_report(y_true, predictions))
 
 
 
