@@ -109,8 +109,6 @@ predictions = []
 prob_ham = len(ham_features) / len(message)
 prob_spam = len(spam_features) / len(message)
 
-print("test:",ham_prob_dict['register'])
-
 for index in range(len(pd_test_data)):
     msgProbOfHam = 1
     msgProbOfSpam = 1
@@ -121,8 +119,6 @@ for index in range(len(pd_test_data)):
         if word in spam_prob_dict:
             
             msgProbOfSpam *= spam_prob_dict[word]
-
-
 
     ham_predict = (prob_ham * msgProbOfHam) / ( (prob_ham * msgProbOfHam) + (prob_spam * msgProbOfSpam) ) 
     spam_predict = (prob_spam * msgProbOfSpam) / ( (prob_spam * msgProbOfSpam) + (prob_ham * msgProbOfHam) )
@@ -135,12 +131,7 @@ for index in range(len(pd_test_data)):
         predictions.append('spam')
 
 
-
 y_true = pd_test_data["labels"].tolist()
-
-# # print(y_predict, "\t", y_true)
-# # print(len(y_predict))
-# # print(len(pd_test_data))
 
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
@@ -150,10 +141,3 @@ print(confusion_matrix(y_true, predictions))
 
 print("Classification Report")
 print(classification_report(y_true, predictions))
-
-
-
-
-
-
-
